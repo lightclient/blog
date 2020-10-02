@@ -34,7 +34,7 @@ not particularly intuitive at first.
 ### Mathematical Security of Sharding
 Let's assume there exists [a blockchain][2] with 16,384 validators, 64 shards, and 128 committee members validating each shard. There is no committee selection look-ahead and after each slot all committees are disbanded and 64 new committees are determined randomly from the overall validator set such that no validator knows what committee another validator is on. Assuming a {{ katex(body="\frac{2}{3}") }} (i.e. 86 committee members) quorum is required to progress a shard, this implies the probability of a malicious committee chosen at random, without replacement, from the validator set with {{ katex(body="\frac{1}{3}") }} byzantine validators is:
 
-{{ katex(body="hygecdf(\frac{2 \times 128}{3}, \, 16384, \, \frac{16384}{3}, \, 128, \, upper) = 5.5 \times 10^{-15}") }}. 
+{{ katex(body="\operatorname{hypecdf}(\frac{2 \times 128}{3}, \, 16384, \, \frac{16384}{3}, \, 128, \, upper) = 5.5 \times 10^{-15}") }}. 
 
 It should also be noted that this parameter can be scaled up and down by
 modifying the committee size to achieve the desired level of security.
@@ -183,7 +183,7 @@ layer that are not bound to fate of the protocol shards.
 
 ### Rollback Minimization
 
-In a simple ORU, the elected leader has the power to submit an invalid state transition. Although this isn't a safety violation, because a fraud proof will revert the transition, it does disrupt the progress of the rollup. In isolation, this disruption is typically not worth the cost for an adversary. However, in eth2, cross-shard communication makes this problem particularly thorny. Shards on slot {{ katex(body"N" }} have the expectation that they can build off of all other shard states at {{ katex(body="N-1") }}. If some shard {{ katex(body="S_i") }} crosslinks an invalid state transition, there is no reasonable way to revert its side effects on shards {{ katex(body="S_j" }} where {{ katex(body="0 \leq j \leq 64; \; i \neq j") }} other than a unilateral rollback.
+In a simple ORU, the elected leader has the power to submit an invalid state transition. Although this isn't a safety violation, because a fraud proof will revert the transition, it does disrupt the progress of the rollup. In isolation, this disruption is typically not worth the cost for an adversary. However, in eth2, cross-shard communication makes this problem particularly thorny. Shards on slot {{ katex(body="N") }} have the expectation that they can build off of all other shard states at {{ katex(body="N-1") }}. If some shard {{ katex(body="S_i") }} crosslinks an invalid state transition, there is no reasonable way to revert its side effects on shards {{ katex(body="S_j") }} where {{ katex(body="0 \leq j \leq 64; i \neq j") }} other than a unilateral rollback.
 
 To avoid such a catastrophic event, there must be mechanisms in place to avoid such rollbacks. Two obvious ones are shard committees and custody bit checks. As demonstrated in the section above regarding the mathematical properties of sharding, the chances of corrupting {{ katex(body="\frac{2}{3}") }} of a shard committee are low -- even taking into account the various attack vectors. The custody bit helps ensure that honest validators aren't duped into signing an invalid transition out of laziness.
 
