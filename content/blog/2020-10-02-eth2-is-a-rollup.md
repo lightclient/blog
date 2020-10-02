@@ -36,11 +36,11 @@ Let's assume there exists [a blockchain][2] with 16,384 validators, 64 shards,
 and 128 committee members validating each shard. There is no committee
 selection look-ahead and after each slot all committees are disbanded and 64
 new committees are determined randomly from the overall validator set such that
-no validator knows what committee another validator is on. Assuming a {{
-katex(body="\frac{2}{3}") }} (i.e. 86 committee members) quorum is required to
+no validator knows what committee another validator is on. Assuming a 
+{{ katex(body="\frac{2}{3}") }} (i.e. 86 committee members) quorum is required to
 progress a shard, this implies the probability of a malicious committee chosen
-at random, without replacement, from the validator set with {{
-katex(body="\frac{1}{3}") }} byzantine validators is:
+at random, without replacement, from the validator set with 
+{{ katex(body="\frac{1}{3}") }} byzantine validators is:
 
 
 {{ katex(body="hygecdf(\frac{2 \times 128}{3}, \, 16384, \, \frac{16384}{3}, \, 128, \, upper) = 5.5 \times 10^{-15}") }}. 
@@ -121,14 +121,15 @@ the number of samples, Al-Bassam proposed to encode the block data with a
 two-dimensional Reed-Solomon encoding. 
 
 In this construction, the block chunked into {{ katex(body="N") }} shares and
-then encoded, generating {{ katex(body="M") }} shares where *any* {{
-katex(body="N") }} out of {{ katex(body="M") }} shares can reconstruct the
+then encoded, generating {{ katex(body="M") }} shares where *any*
+{{ katex(body="N") }} out of {{ katex(body="M") }} shares can reconstruct the
 block. Assuming {{ katex(body="2N = M") }}, then the block proposer would need
 to hide {{ katex(body="\frac{1}{2}") }} of the block in order to successfully
 execute a data unavailability attack. The Coded Merkle Tree offers a similar
-construction, but with {{ katex(body="O(b)") }} decoding overhead and {{
-katex(body="O(1)") }} hash commitment instead of {{ katex(body="O(b^{1.5})") }}
-decoding overhead and {{ katex(body="O(\sqrt{b})") }} hash commitment offered
+construction, but with {{ katex(body="O(b)") }} decoding overhead and 
+{{ katex(body="O(1)") }} hash commitment instead of 
+{{ katex(body="O(b^{1.5})") }} decoding overhead and 
+{{ katex(body="O(\sqrt{b})") }} hash commitment offered
 by 2D Reed Solomon encoding, where {{ katex(body="b") }} is the size of the
 block in bytes.
 
