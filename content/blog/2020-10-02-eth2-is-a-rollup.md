@@ -83,12 +83,12 @@ a good state. We can enumerate a few options:
 
 1. The {{ katex(body="\frac{1}{3} - 1") }} minority in {{ katex(body="C_X") }}
    can raise an alarm on {{ katex(body="B") }} claiming data unavailability.
-   Unfortunately this is a non-uniquely attributable fault and therefore, {{
-   katex(body="B") }} is unable to determine which group acted maliciously.
+   Unfortunately this is a non-uniquely attributable fault and therefore, 
+   {{ katex(body="B") }} is unable to determine which group acted maliciously.
    This creates a free DDoS vector for a byzantine minority to exploit.
 2. The rest of the nodes in the network could raise an alarm that the data was
-   not made available. Except they can't, because only the members of {{
-   katex(body="C_X") }} were watching during the fault.
+   not made available. Except they can't, because only the members of 
+   {{ katex(body="C_X") }} were watching during the fault.
 3. The community will realize that a fault occurred and roll {{ katex(body="B")
    }} back to its last known good state. This bad for obvious reasons.
 4. A Plasma-like mass exit from {{ katex(body="X") }} to {{ katex(body="B") }}
