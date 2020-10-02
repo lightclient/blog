@@ -32,16 +32,7 @@ examine why naive sharding isn't the solution to safe scalability. The reason is
 not particularly intuitive at first.
 
 ### Mathematical Security of Sharding
-Let's assume there exists [a blockchain][2] with 16,384 validators, 64 shards,
-and 128 committee members validating each shard. There is no committee
-selection look-ahead and after each slot all committees are disbanded and 64
-new committees are determined randomly from the overall validator set such that
-no validator knows what committee another validator is on. Assuming a 
-{{ katex(body="\frac{2}{3}") }} (i.e. 86 committee members) quorum is required to
-progress a shard, this implies the probability of a malicious committee chosen
-at random, without replacement, from the validator set with 
-{{ katex(body="\frac{1}{3}") }} byzantine validators is:
-
+Let's assume there exists [a blockchain][2] with 16,384 validators, 64 shards, and 128 committee members validating each shard. There is no committee selection look-ahead and after each slot all committees are disbanded and 64 new committees are determined randomly from the overall validator set such that no validator knows what committee another validator is on. Assuming a {{ katex(body="\frac{2}{3}") }} (i.e. 86 committee members) quorum is required to progress a shard, this implies the probability of a malicious committee chosen at random, without replacement, from the validator set with {{ katex(body="\frac{1}{3}") }} byzantine validators is:
 
 {{ katex(body="hygecdf(\frac{2 \times 128}{3}, \, 16384, \, \frac{16384}{3}, \, 128, \, upper) = 5.5 \times 10^{-15}") }}. 
 
@@ -73,26 +64,12 @@ Assuming each shard is able to process the same amount of data and transactions
 per second as a non-sharded system, introducing them should provide
 approximately two times the throughput. In the optimistic case this is true.
 
-Now let's execute the data unavailability attack on our construction. Assume a
-malicious entity is able to coerce {{ katex(body="\frac{2}{3} + 1") }} of the
-committee members in {{ katex(body="C_X") }} to sign an invalid state root and
-to not publish the input data for that block on {{ katex(body="X") }}. The
-invalid root is then included in the next block in {{ katex(body="B") }}. There
-are no reasonable mechanisms that will allow {{ katex(body="B") }} to return to
-a good state. We can enumerate a few options:
+Now let's execute the data unavailability attack on our construction. Assume a malicious entity is able to coerce {{ katex(body="\frac{2}{3} + 1") }} of the committee members in {{ katex(body="C_X") }} to sign an invalid state root and to not publish the input data for that block on {{ katex(body="X") }}. The invalid root is then included in the next block in {{ katex(body="B") }}. There are no reasonable mechanisms that will allow {{ katex(body="B") }} to return to a good state. We can enumerate a few options:
 
-1. The {{ katex(body="\frac{1}{3} - 1") }} minority in {{ katex(body="C_X") }}
-   can raise an alarm on {{ katex(body="B") }} claiming data unavailability.
-   Unfortunately this is a non-uniquely attributable fault and therefore, 
-   {{ katex(body="B") }} is unable to determine which group acted maliciously.
-   This creates a free DDoS vector for a byzantine minority to exploit.
-2. The rest of the nodes in the network could raise an alarm that the data was
-   not made available. Except they can't, because only the members of 
-   {{ katex(body="C_X") }} were watching during the fault.
-3. The community will realize that a fault occurred and roll {{ katex(body="B")
-   }} back to its last known good state. This bad for obvious reasons.
-4. A Plasma-like mass exit from {{ katex(body="X") }} to {{ katex(body="B") }}
-   is performed, incurring all its negative properties.
+1. The {{ katex(body="\frac{1}{3} - 1") }} minority in {{ katex(body="C_X") }} can raise an alarm on {{ katex(body="B") }} claiming data unavailability. Unfortunately this is a non-uniquely attributable fault and therefore, {{ katex(body="B") }} is unable to determine which group acted maliciously. This creates a free DDoS vector for a byzantine minority to exploit.
+2. The rest of the nodes in the network could raise an alarm that the data was not made available. Except they can't, because only the members of {{ katex(body="C_X") }} were watching during the fault.
+3. The community will realize that a fault occurred and roll {{ katex(body="B") }} back to its last known good state. This bad for obvious reasons.
+4. A Plasma-like mass exit from {{ katex(body="X") }} to {{ katex(body="B") }} is performed, incurring all its negative properties.
 
 Like in Plasma, the real problem here is data availability.
 
@@ -120,18 +97,7 @@ in order to gain enough confidence to accept the block as available. To reduce
 the number of samples, Al-Bassam proposed to encode the block data with a
 two-dimensional Reed-Solomon encoding. 
 
-In this construction, the block chunked into {{ katex(body="N") }} shares and
-then encoded, generating {{ katex(body="M") }} shares where *any*
-{{ katex(body="N") }} out of {{ katex(body="M") }} shares can reconstruct the
-block. Assuming {{ katex(body="2N = M") }}, then the block proposer would need
-to hide {{ katex(body="\frac{1}{2}") }} of the block in order to successfully
-execute a data unavailability attack. The Coded Merkle Tree offers a similar
-construction, but with {{ katex(body="O(b)") }} decoding overhead and 
-{{ katex(body="O(1)") }} hash commitment instead of 
-{{ katex(body="O(b^{1.5})") }} decoding overhead and 
-{{ katex(body="O(\sqrt{b})") }} hash commitment offered
-by 2D Reed Solomon encoding, where {{ katex(body="b") }} is the size of the
-block in bytes.
+In this construction, the block chunked into {{ katex(body="N") }} shares and then encoded, generating {{ katex(body="M") }} shares where *any* {{ katex(body="N") }} out of {{ katex(body="M") }} shares can reconstruct the block. Assuming {{ katex(body="2N = M") }}, then the block proposer would need to hide {{ katex(body="\frac{1}{2}") }} of the block in order to successfully execute a data unavailability attack. The Coded Merkle Tree offers a similar construction, but with {{ katex(body="O(b)") }} decoding overhead and  {{ katex(body="O(1)") }} hash commitment instead of  {{ katex(body="O(b^{1.5})") }} decoding overhead and  {{ katex(body="O(\sqrt{b})") }} hash commitment offered by 2D Reed Solomon encoding, where {{ katex(body="b") }} is the size of the block in bytes.
 
 For a more detailed explanation of this technique, please see this
 [note][10].
@@ -217,31 +183,11 @@ layer that are not bound to fate of the protocol shards.
 
 ### Rollback Minimization
 
-In a simple ORU, the elected leader has the power to submit an invalid state
-transition. Although this isn't a safety violation, because a fraud proof will
-revert the transition, it does disrupt the progress of the rollup. In isolation,
-this disruption is typically not worth the cost for an adversary. However, in
-eth2, cross-shard communication makes this problem particularly thorny. Shards
-on slot $N$ have the expectation that they can build off of all other shard
-states at $N-1$. If some shard $S_i$ crosslinks an invalid state transition,
-there is no reasonable way to revert its side effects on shards $S_j$ where $0
-\leq j \leq 64; \; i \neq j$ other than a unilateral rollback.
+In a simple ORU, the elected leader has the power to submit an invalid state transition. Although this isn't a safety violation, because a fraud proof will revert the transition, it does disrupt the progress of the rollup. In isolation, this disruption is typically not worth the cost for an adversary. However, in eth2, cross-shard communication makes this problem particularly thorny. Shards on slot {{ katex(body"N" }} have the expectation that they can build off of all other shard states at {{ katex(body="N-1") }}. If some shard {{ katex(body="S_i") }} crosslinks an invalid state transition, there is no reasonable way to revert its side effects on shards {{ katex(body="S_j" }} where {{ katex(body="0 \leq j \leq 64; \; i \neq j") }} other than a unilateral rollback.
 
-To avoid such a catastrophic event, there must be mechanisms in place to avoid
-such rollbacks. Two obvious ones are shard committees and custody bit checks. As
-demonstrated in the section above regarding the mathematical properties of
-sharding, the chances of corrupting $\frac{2}{3}$ of a shard committee are low
--- even taking into account the various attack vectors. The custody bit helps
-ensure that honest validators aren't duped into signing an invalid transition
-out of laziness.
+To avoid such a catastrophic event, there must be mechanisms in place to avoid such rollbacks. Two obvious ones are shard committees and custody bit checks. As demonstrated in the section above regarding the mathematical properties of sharding, the chances of corrupting {{ katex(body="\frac{2}{3}") }} of a shard committee are low -- even taking into account the various attack vectors. The custody bit helps ensure that honest validators aren't duped into signing an invalid transition out of laziness.
 
-By viewing these mechanisms as *deterrents* against invalid transitions, instead
-of mechanisms upholding the safety of the system, we have the ability to choose
-parameters that may make more practical sense while achieving the same effect.
-For example, reducing the shard committee size to $64$ members will still yield
-a probability of $3.1 \times 10^{-8}$ of randomly sampling a byzantine
-committee. But from a practical networking and signature aggregation point of
-view, it could significantly alleviate some of the burden.
+By viewing these mechanisms as *deterrents* against invalid transitions, instead of mechanisms upholding the safety of the system, we have the ability to choose parameters that may make more practical sense while achieving the same effect. For example, reducing the shard committee size to 64 members will still yield a probability of {{ katex(body="3.1 \times 10^{-8}") }} of randomly sampling a byzantine committee. But from a practical networking and signature aggregation point of view, it could significantly alleviate some of the burden.
 
 ## A Rollup-Centric Ethereum Roadmap
 
