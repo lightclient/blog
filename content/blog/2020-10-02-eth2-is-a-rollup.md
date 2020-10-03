@@ -68,7 +68,7 @@ Now let's execute the data unavailability attack on our construction. Assume a m
 
 1. The {{ katex(body="\frac{1}{3} - 1") }} minority in {{ katex(body="C_X") }} can raise an alarm on {{ katex(body="B") }} claiming data unavailability. Unfortunately this is a non-uniquely attributable fault and therefore, {{ katex(body="B") }} is unable to determine which group acted maliciously. This creates a free DDoS vector for a byzantine minority to exploit.
 2. The rest of the nodes in the network could raise an alarm that the data was not made available. Except they can't, because only the members of {{ katex(body="C_X") }} were watching during the fault.
-3. The community will realize that a fault occurred and roll {{ katex(body="B") }} back to its last known good state. This bad for obvious reasons.
+3. The community will realize that a fault occurred and roll {{ katex(body="B") }} back to its last known good state. This is bad for obvious reasons.
 4. A Plasma-like mass exit from {{ katex(body="X") }} to {{ katex(body="B") }} is performed, incurring all its negative properties.
 
 Like in Plasma, the real problem here is data availability.
@@ -178,7 +178,7 @@ to validate the rollup would have to be.
 The system described above would be a strict superset of the current sharding
 design. Not only could there still be 64 protocol defined shards, there could be
 other rollups with their own characteristics built on top of the secure data
-layer that are not bound to fate of the protocol shards.
+layer that are not bound to the fate of the protocol shards.
 
 
 ### Rollback Minimization
