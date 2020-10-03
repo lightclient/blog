@@ -193,12 +193,13 @@ By viewing these mechanisms as *deterrents* against invalid transitions, instead
 
 This post was originally written during SBC20 when I begun to fully grasp the
 similarities between eth2 and ORUs. In light of Vitalik's [post][1], I decided
-to finally this post in agreement of the "rollup-centric" approach for the
-future of Ethereum. Although, as shown in this post, a "rollup-centric" approach
-is not a major departure from where we were already heading -- just a superset.
-The [problems][16] we faced with sharding are isomorphic to problems we'll face
-when integrating cross-rollup communication. This means that large body of work
-that has already begun on the topic can continue, mostly uninterrupted.
+to finally publish this post in agreement of the "rollup-centric" approach for
+the future of Ethereum. Although, as shown in this post, a "rollup-centric"
+approach is not a major departure from where we were already heading -- just a
+superset. The [problems][16] we faced with sharding are isomorphic to problems
+we'll face when integrating cross-rollup communication. This means that large
+body of work that has already begun on the topic can continue, mostly
+uninterrupted.
 
 The rollup-centric roadmap will reduce the protocol complexity that would be
 required to shard execution. It will allow use to develop complex, shard-like
@@ -232,6 +233,6 @@ help.*
 [12]: https://github.com/ethereum/eth2.0-specs/blob/dev/specs/phase1/beacon-chain.md#extended-beaconblockbody
 [13]: https://github.com/ethereum/eth2.0-specs/blob/dev/specs/phase1/beacon-chain.md#validate_attestation
 [14]: https://github.com/ethereum/eth2.0-specs/blob/ee-draft/specs/phase1/shard-transition.md#honest-committee-member-behavior
-[15]: https://github.com/ethereum/eth2.0-specs/blob/dev/specs/phase1/fraud-proofs.md#fraud-proofs
+[15]: https://github.com/ethereum/eth2.0-specs/blob/6a1813b1d64ef06d59d5d2a16b8ea21b2ad72887/specs/phase1/shard-transition.md#fraud-proofs
 [16]: https://ethresear.ch/t/cross-shard-defi-composability/6268
 [17]: https://ethresear.ch/t/open-research-questions-for-phases-0-to-2/5871
