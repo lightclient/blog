@@ -5,7 +5,7 @@ title = "eth2 was a rollup format"
 tags = ["ethereum"]
 +++
 
-When we transition to a new scaling pardigm, it is good practice to [review][0]
+When we transition to a new scaling paradigm, it is good practice to [review][0]
 what we've left behind.
 
 The goal of this post is to convince the reader that a "[rollup-centric][1]"
