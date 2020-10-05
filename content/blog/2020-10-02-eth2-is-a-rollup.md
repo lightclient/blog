@@ -215,9 +215,9 @@ clearer.
 --
 
 *If you found this interesting and want to discuss the topic further, contact
-me on twitter [@lightclients](https://twitter.com/lightclients). I'm looking to
-connect outstanding researchers & engineers to impactful projects. DM me if you'd like
-help.*
+me on twitter [@lightclients](https://twitter.com/lightclients). I'm also
+looking to connect outstanding researchers & engineers to impactful projects.
+DM me if you'd like help.*
 
 [0]: https://ethresear.ch/t/plasma-cash-was-a-transaction-format/4261
 [1]: https://ethereum-magicians.org/t/a-rollup-centric-ethereum-roadmap/4698
