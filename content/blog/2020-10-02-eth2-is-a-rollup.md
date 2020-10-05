@@ -95,7 +95,7 @@ ensure that the proposer has made the data available. The danger is that the
 block proposer only needs to hide a small amount of data to carry out a data
 unavailability attack. Therefore, participants must sample the block many times
 in order to gain enough confidence to accept the block as available. To reduce
-the number of samples, Al-Bassam proposed to encode the block data with a
+the number of samples, Vitalik proposed to encode the block data with a
 two-dimensional Reed-Solomon encoding. 
 
 In this construction, the block chunked into {{ katex(body="N") }} shares and then encoded, generating {{ katex(body="M") }} shares where *any* {{ katex(body="N") }} out of {{ katex(body="M") }} shares can reconstruct the block. Assuming {{ katex(body="2N = M") }}, then the block proposer would need to hide {{ katex(body="\frac{1}{2}") }} of the block in order to successfully execute a data unavailability attack. The Coded Merkle Tree offers a similar construction, but with {{ katex(body="O(b)") }} decoding overhead and  {{ katex(body="O(1)") }} hash commitment instead of  {{ katex(body="O(b^{1.5})") }} decoding overhead and  {{ katex(body="O(\sqrt{b})") }} hash commitment offered by 2D Reed Solomon encoding, where {{ katex(body="b") }} is the size of the block in bytes.
