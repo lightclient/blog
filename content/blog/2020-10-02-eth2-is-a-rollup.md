@@ -83,12 +83,13 @@ attacks.
 Traditionally, improving the data throughput on a blockchain required
 [out-of-band agreements][7] on the minimum supported hardware / bandwidth
 requirements of the system -- implying a certain acceptable blocksize. Recent
-work by Al-Bassam et al. provides [a probabilistic mechanism][8] to ensure data
-availability. This work was further extended by M. Yu et al. with their [Coded
-Merkle Tree][9] accumulator, which provides order-optimal metrics.
+work by Mustafa Al-Bassam and Vitalik Buterin provides [a probabilistic
+mechanism][8] to ensure data availability. This work was further extended by M.
+Yu et al. with their [Coded Merkle Tree][9] accumulator, which provides
+order-optimal metrics.
 
 The key insight to these schemes is the relaxation of the requirement that
-participants in the network download all the data. Instead, Al-Bassam proposed
+participants in the network download all the data. Instead, Vitalik proposed
 that participants in the network randomly sample small chunks of the block to
 ensure that the proposer has made the data available. The danger is that the
 block proposer only needs to hide a small amount of data to carry out a data
