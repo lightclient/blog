@@ -198,8 +198,8 @@ to finally publish this post in agreement of the "rollup-centric" approach for
 the future of Ethereum. Although, as shown in this post, a "rollup-centric"
 approach is not a major departure from where we were already heading -- just a
 superset. The [problems][16] we faced with sharding are isomorphic to problems
-we'll face when integrating cross-rollup communication. This means that large
-body of work that has already begun on the topic can continue, mostly
+we'll face when integrating cross-rollup communication. This means that the
+large body of work that has already begun on the topic can continue, mostly
 uninterrupted.
 
 The rollup-centric roadmap will reduce the protocol complexity that would be
