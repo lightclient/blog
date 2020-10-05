@@ -203,7 +203,7 @@ large body of work that has already begun on the topic can continue, mostly
 uninterrupted.
 
 The rollup-centric roadmap will reduce the protocol complexity that would be
-required to shard execution. It will allow use to develop complex, shard-like
+required to shard execution. It will allow us to develop complex, shard-like
 rollup mechanisms iteratively. This will enfranchise a much wider set of
 developers to contribute different rollup formats and allow existing core
 developers and researchers to focus on building a robust data-availability
