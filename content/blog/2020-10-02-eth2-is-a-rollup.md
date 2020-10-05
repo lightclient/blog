@@ -47,8 +47,8 @@ leaving room for [adaptive adversaries][4] to bribe rational participants into
 performing arbitrary behavior. This is even more prevalent, if a mapping from
 validator public keys to IP address can [easily be created][5]. Moreover,
 verifiable voting in permissionless settings is [inherently vulnerable][6] to
-bribery. For these reasons, the *real* security of the shards is several orders
-of magnitude worse than the theoretical values.
+bribery. For these reasons, the *real* security of the shards is at least an
+order of magnitude worse than the theoretical values.
 
 ### Sharded Data Availability is Plasma
 Even if the security of the shards is less than the overall protocol, we can
