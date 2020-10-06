@@ -3,15 +3,17 @@
 {% import "post-preview.html" as post_macros %}
 
 {% block posthead %} 
-  {% for post in section.pages %}
+  {% set blog = get_section(path="blog/_index.md") %}
+  {% for post in blog.pages %}
     <link rel="prerender" href="{{ post.permalink }}" />
   {% endfor %}
 {% endblock posthead %}
 
 {% block content %}
-  {{ section.content | safe }}
+  {% set blog = get_section(path="blog/_index.md") %}
+  {{ blog.content | safe }}
 
-  {% for post in section.pages %}
+  {% for post in blog.pages %}
     {{ post_macros::post_preview(post=post) }}
   {% endfor %}
 {% endblock content %}

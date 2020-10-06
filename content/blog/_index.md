@@ -4,4 +4,4 @@ page_template = "blog-post.html"
 sort_by = "date"
 +++
 
-## lightclient's blog
+## posts
