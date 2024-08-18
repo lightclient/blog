@@ -109,7 +109,7 @@ The sharding design in eth2 obfuscates the fact that they are actually just ORUs
 to the beacon chain. If the focus is shifted from distributed processing to the
 ordered data availability layer, it becomes clearer.
 
-![Figure 1](https://i.imgur.com/wbmrrMG.png)
+![Figure 1](sampling.png)
 
 In the diagram above, the validator set has four roles:
 
