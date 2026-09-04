@@ -154,6 +154,17 @@ a.profile-icon {
   }
 }
 
+a.site-title {
+  margin: auto;
+  padding-top: 6px;
+  padding-left: 1rem;
+  font-family: sans-serif;
+  font-size: 25px;
+  font-weight: 200;
+  color: inherit;
+  border: none;
+}
+
 nav {
   display: flex;
   align-items: center;
