@@ -17,13 +17,22 @@
 
     <meta name="theme-color" content="{{ config.extra.accent }}" />
 
-    <meta property="og:type" content="website">
+    {% if config.title %}{% set site_name = config.title %}{% else %}{% set site_name = config.extra.author %}{% endif %}
+    {% if page.title %}{% set og_title = page.title %}{% else %}{% set og_title = site_name %}{% endif %}
+
+    <meta property="og:type" content="{% if page %}article{% else %}website{% endif %}">
+    <meta property="og:site_name" content="{{ site_name }}">
+    <meta property="og:title" content="{{ og_title }}">
+    {% if current_url %}
+    <meta property="og:url" content="{{ current_url | safe }}">
+    {% endif %}
 
     <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{ og_title }}">
 
-    {% if config.twitter %}
-      <meta name="twitter:creator" content="@{{ config.twitter }}">
-      <meta name="twitter:site" content="@{{ config.twitter }}">
+    {% if config.extra.twitter %}
+      <meta name="twitter:creator" content="{{ config.extra.twitter }}">
+      <meta name="twitter:site" content="{{ config.extra.twitter }}">
     {% endif %}
 
     {% if page.extra.thumbnail %}
@@ -35,18 +44,14 @@
     {% block description %}
       {% if page.description %}
         <meta name="description" content="{{ page.description }}" />
+        <meta property="og:description" content="{{ page.description }}">
         <meta name="twitter:description" content="{{ page.description }}">
-      {% else %}
+      {% elif config.description %}
         <meta name="description" content="{{ config.description }}" />
-        <meta name="twitter:description" content="{{ config.description}}">
+        <meta property="og:description" content="{{ config.description }}">
+        <meta name="twitter:description" content="{{ config.description }}">
       {% endif %}
     {% endblock description %}
-
-    {% if page.title %}
-      <meta name="twitter:title" content="{{ page.title }}">
-    {% else %}
-      <meta name="twitter:title" content="{{ config.title }}">
-    {% endif %}
 
     {% for link in config.extra.nav %}
       <link rel="prerender" href="{{ link.path }}" />

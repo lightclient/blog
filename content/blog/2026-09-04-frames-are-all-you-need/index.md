@@ -1,5 +1,6 @@
 +++
 title = "Frames are all you need"
+description = "Ethereum is meant to be limited only by users' imagination. Frame transaction is an extraordinarily capable transaction model that will power the future of creativity."
 
 [taxonomies]
 tags = ["ethereum"]
