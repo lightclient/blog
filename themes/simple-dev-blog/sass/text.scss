@@ -40,15 +40,47 @@ body {
     overflow: auto;
     padding: 1rem;
     max-width: 100%;
+    font-size: 0.85em;
+    line-height: 1.5;
+    tab-size: 4;
+
+    // Line wrappers emitted by Zola's Giallo highlighter (needed for
+    // `linenos` and `hl_lines` to render correctly).
+    .giallo-l {
+      display: inline-block;
+      min-height: 1lh;
+      width: 100%;
+    }
+
+    .giallo-ln {
+      display: inline-block;
+      user-select: none;
+      margin-right: 0.4em;
+      padding: 0 0.4em;
+      min-width: 3ch;
+      text-align: right;
+      opacity: 0.8;
+    }
   }
 }
 
+pre,
 code {
-  background: hsla(0, 0%, 0%, 0.04);
-  padding: 0.2em 0;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
+}
+
+code {
+  font-size: 0.85em;
+  background: hsla(0, 0%, 0%, 0.05);
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
 
   pre > & {
+    font-size: inherit;
     background: none;
+    padding: 0;
+    border-radius: 0;
   }
 }
 
