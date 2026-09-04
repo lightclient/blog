@@ -81,16 +81,6 @@ generate_robots_txt = true
 
 # Configuration of the Markdown rendering
 [markdown]
-# When set to "true", all code blocks are highlighted.
-highlight_code = true
-
-# A list of directories used to search for additional `.sublime-syntax` and `.tmTheme` files.
-extra_syntaxes_and_themes = []
-
-# The theme to use for code highlighting.
-# See below for list of allowed values.
-highlight_theme = "base16-ocean-dark"
-
 # When set to "true", emoji aliases translated to their corresponding
 # Unicode emoji equivalent in the rendered Markdown files. (e.g.: :smile: => 😄)
 render_emoji = false
@@ -116,6 +106,15 @@ lazy_async_image = false
 
 # Whether footnotes are rendered in the GitHub-style (at the bottom, with back references) or plain (in the place, where they are defined)
 bottom_footnotes = false
+
+# Syntax highlighting configuration
+[markdown.highlighting]
+# Whether to use inline hex colours (`inline`) or CSS classes (`class`)
+style = "inline"
+
+# The theme to use for code highlighting.
+# See https://github.com/getzola/giallo#themes for the list of allowed values.
+theme = "github-dark"
 
 # Configuration of the link checker.
 [link_checker]
