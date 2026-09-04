@@ -1,0 +1,144 @@
++++
+title = "Frames are all you need"
+
+[taxonomies]
+tags = ["ethereum"]
++++
+
+A [founding principle][on-abstraction] of Ethereum is to create an environment that is limited only by users' imagination. Certain concessions were made to deliver the network in a timely fashion, including a transaction type with a fixed authentication scheme. It was [never intended][eip-86] to be the final solution.
+
+The lineage of account abstraction discussions stretches over a decade now. We've seen in-protocol proposals, application standards, and alt-mempool implementations. A lot was learned in that decade. We found that account abstraction often means something very different to different people (I always preferred "validation abstraction", since it gets to the point). We also found that users' needs are always evolving. Agility is important.
+
+All of this experience has led us to [frame transactions][frame-tx]. I want to share more perspective on why we believe that *frames are all you need*.
+
+## Design goals
+
+To begin understanding our preference for frames, we need to enumerate the design goals and give our solution requirements.
+
+- **Key rotation** -- Maybe one of the gravest omissions of the original protocol; key rotation is a basic, albeit critical, security practice most expect out of a system relying on cryptographic keys.
+- **Crypto-agility** -- Any good account abstraction system will allow users their choice of cryptographic scheme that they will entrust their assets with. We believe users should have the freedom of choice and not be constrained by a [prix-fixe menu][prix-fixe], instead they should have building blocks at their disposal.
+- **Post-quantum ready** -- Key rotation and crypto-agility are stepping stones toward PQ, but there is one looming problem: PQ crypto is *big*. Like, signatures that are two to ten kilobytes big. Sure, users can pay half a million gas for their signature, but this isn't scalable if we want to maintain some semblance of normality for users. For this, we need *signature aggregation*.
+- **Sender/payer separation** -- There are many use cases that require the sender and payer to be different entities, including contracts. Think tx sponsorship, gas abstraction, user onboarding, etc.
+- **Relayer-less** -- The public mempool plays a key role in ensuring the censorship resistance of Ethereum. With many routes to block builders and inclusion committees, its denial of service is unlikely. All common use cases must be supported by default in the public mempool.
+- **Programmable validity** -- Although many design goals can fall under this point, we should have the humility to know that we can't even begin to imagine all the validation constraints users might want. As in the founding principle, we believe that programmable validation is a key attribute of account abstraction.
+
+Most of these come for free when you allow users to execute arbitrary code. Key rotation systems and crypto-agility just become code. It's even in the name for programmable validity. Sender and payer separation requires more thought, but also ends up being relatively straightforward.
+
+The two most difficult demands faced are supporting signature aggregation for future PQ schemes, while also ensuring all of the above constraints are available *safely* in the public mempool.
+
+## Learning progression
+
+When we originally worked on [EIP-2938][eip-2938], we only envisioned *one frame*. We were naive and optimistic about the power of the EVM. It felt perfect: allow transactions arbitrary computation before deciding to `PAYGAS`. After that, the hard part is done and execution continues as normal.
+
+It also felt superior to ERC-4337, which came about a bit later. The popular alt-mempool strategy for account abstraction had a complex transaction lifecycle. There were defined operations for validating the user op and paymaster op, executing the user op, balance accounting, and a post-op for handling results. To facilitate safety in the mempool, a reputation system was layered on top.
+
+Later, we realized that EIP-2938 couldn't handle sponsorship that well. Gas introspection was tricky, and it was often not easy to reason about the gas pool shared between the sender and payer. In that sense, ERC-4337 was much better.
+
+This was essentially the basis for [EIP-7701][eip-7701]: Native Account Abstraction. Replace the ERC-4337 `EntryPoint` with enshrined protocol logic. In late 2025, I took a stab at implementing the EIP. Most implementations of Ethereum eventually massage all the transaction types into a single format that can be processed by the state transition function. In Geth, our unified transaction object is `Message`. Adding the EIP-7701 transaction to this message was painful due to the number of incompatibilities it had with respect to existing transaction types. A fully independent lifecycle for EIP-7701 transactions had to be written as an alternative branch in the state transition. My conclusion from this was that EIP-7701 was doomed from the start. This feedback was shared.
+
+In early 2026, Yoav and Vitalik developed a more general idea: the frame transaction. This memo assumes the reader is familiar with [EIP-8141: Frame Transaction][frame-tx], so please review it if you haven't already.
+
+## Frames' unique properties
+
+There are two key advantages of frames:
+
+- **Extensibility** -- Because frames are just general compute segments, they can do just about anything an enshrined protocol rule could. A few basic concepts are baked in, such as *tx validity*, *gas payment*, who the *sender* is, and *replay protection*. We'll see later how these can be leveraged to achieve the design goals in a generic manner.
+- **Observability** -- A less obvious but equally important advantage is the ability for the protocol to *statically reason* about a transaction. It's one thing for the EVM to be able to process the computation; it's a whole other thing for the protocol to efficiently handle the computation in all possible scenarios: reorgs, high throughput, DoS attempts, etc. The frame structure promotes this by laying precisely what the target of the frame will be and modes can signal the general intent of the frame. This can all be used together to define very expressive *validation prefixes*.
+
+Extensibility is what separates frames from most other account abstraction proposals, and observability is what makes them feasible in production.
+
+## Public mempool subset
+
+It's important to note also that there is a distinction between what is possible with frames and what is possible with frames in the public mempool. Because frames are so extensible, only a subset of what is possible can be safely propagated over the public mempool. This is because some features can't be reasoned about safely, even with improved observability. [Revert protection][revert-protection] is a good example, because by definition it requires the full execution of the operation to complete before deciding if the transaction should be considered valid or not. Imagine a mempool full of those that could be invalidated by flipping a bit. Cheap DoS.
+
+## Showcase of frame extensions
+
+Some examples of frames' flexibility are shown below. Each example is presented as a solution that can not only be implemented in frames but also be generally available to users via the public mempool.
+
+### Expiry frame
+
+A [long-desired][eip-2711] feature for transactions is the ability to specify a window in which the transaction is considered valid. [Most][tempo-tx] [chains][base-tx] implement this with [custom fields][erc-4337] in the transaction container or another interface.
+
+This can be directly implemented with a [canonical expiry contract][8141-expiry] and a known frame [prefix][prefix]. The canonical contract implements the protocol rules like `if ( TIMESTAMP > valid_until ) { revert() }`. `VERIFY` frames that call the expiry contract can then be reasoned about statically. If the frame's calldata is simply `valid_until`, this becomes a de facto defined quantity on the transaction, without any protocol changes.
+
+To process these transactions most efficiently, the mempool should interpret this field and have specific structures to drop expired txs. Adding frame extensions isn't "free", but it shifts the complexity from the core protocol to the mempool, which, in most cases, is very desirable.
+
+### Recent roots
+
+Due to the [inevitable rules][frame-mempool] that protect the public mempool, by default it is not possible to withdraw from a privacy pool and use the newly withdrawn ether to pay for the withdrawal transaction. This limitation is due to the restrictions placed on storage access in the public mempool.
+
+It isn't that storage access is inherently impossible to support. It is that arbitrary access is problematic. As with the expiry frame, we can apply a similar strategy: define a canonical implementation of behavior we know is safe and allow transactions to reference it in a prefix.
+
+The solution is to deploy and anoint a [canonical recent roots contract][recent-roots-asm]. The contract allows privacy pools to register a recent root -- in their context, the root of the commitment tree and possibly a root of used nullifiers. The public mempool is modified to allow a `VERIFY` frame that reads the contract and determines whether the note that is being redeemed is valid. If so, it can safely `APPROVE` using the pool funds and return the difference between the note value and fees paid to the withdrawer.
+
+### Transaction assertions
+
+During the [Trillion Dollar Security][1ts] project last year, the feedback we received again and again was that users, big and small, were worried about the correctness of their transactions. This was distilled into the simple question:
+
+> Does this transaction do X and nothing else?
+
+Simply knowing a transaction does X is not sufficient. In the very same transaction, it could also be siphoning away assets to adversaries. With the rise of smart accounts and batching, this problem only becomes more pertinent.
+
+To know that X and only X happens, there must be access to a full journal of events in the transaction. Two notable ones are kept: the state journal and the log list. The list of logs emitted by the transaction seems relatively benign to surface, but is incomplete. However, exposing the state journal would be less benign.
+
+Contract authors have gone to great lengths to design good interfaces for their contracts. Allowing other contracts to introspect directly into raw storage elements of the contract is brittle and has [previously][extsload] been discussed and declined for consideration in the protocol.
+
+It may seem these two requirements are mutually exclusive: knowing that X and only X happens and not exposing the state journal. However, we believe there is an acceptable middle ground. If access to the state journal is not granted *arbitrarily*, then the amount of data someone can exfiltrate from it can be limited. For example, if there is a special environment where we can allow the transaction to make a binary decision to accept the changes the transaction has thus far created or reject them, we can limit the exfiltration to 1 bit. Cunning EVM developers would certainly abuse this to read all 256 bits of a storage slot, so we can also impose that this special "assert" environment only occur at the end of the transaction.
+
+This is the inspiration for the current state of [EIP-7906: Transaction Assertions via State Diff Opcode][eip-7906]. The opcodes introduced provide the functionality required; the `POST_TX` frame ensures the opcodes cannot be abused. Outside the `POST_TX` frame, the `TXDIFF` and related instructions result in an exceptional halt of execution, and then validity of the overall frame transaction requires the `POST_TX` mode only be used as a postfix.
+
+There are other ways to achieve a similar outcome, but with frames it is straightforward, modular, and immediately useful to any account transacting with frames.
+
+### Account sweeping
+
+Intuitively, it makes little sense how difficult it is to send the full ether balance from an account. The exact gas costs need to be carefully planned, and an inefficient price is paid where all excess is tipped to the builder. Sweeping the full balance from one account to another should be easy; however, it turns out not so easy.
+
+The process of paying for gas and initiating execution is the same for all transaction types currently. An [obvious solution][ssz-sweep] is to introduce a new transaction type whose sole purpose is to sweep the entire balance of an account to a new destination. Of course, this works, but it is inflexible and cannot be integrated into more complex flows.
+
+Enjoyers of the EVM may be itching to point out that the recent neutering of `SELFDESTRUCT` has caused it to become more of a `SENDALL`. If accounts can execute code, just call `SENDALL`! Unfortunately, the same issue arises as with other proposals: the gas refund at the end of the transaction is returned to the payer.
+
+Since the gas refund is the main culprit of our issues, we can address it directly. Suppose we introduce a new instruction `SWEEP`, which behaves the same as `APPROVE` with two distinctions:
+
+- it takes one argument from the stack, the destination to send all funds
+- it changes the account that is due to receive the refund at the end of the transaction to the aforementioned destination account
+
+Now sweeping the account is simple. If `A` is the origin account and `B` is the destination, `A` submits a frame transaction utilizing `SWEEP` with `B` as the argument. Then `A` can execute whatever other remaining cleanup it might want.
+
+### Signature aggregation
+
+Even signatures can be expressed as frames. This was the core idea originally behind [EIP-8288][eip-8288]. Even I was skeptical at first, but am coming around to the general idea.
+
+We implemented the signature list as an explicit item on the frame transaction container, mostly to signify the deep relation between signatures and the protocol. Frames feel like a type of [user space][user-space]. To properly aggregate signatures requires eliding the signature data and compressing it into a single witness. Stepping into a frame and ripping apart its data seems like a violation of some boundary. But it's possible!
+
+Imagine a frame mode `SIGNATURE` and a set of canonical cryptographic contracts, likely precompiles. Until we have a general-purpose zkEVM we are happy to ship on L1, we can rely on more focused signature aggregation techniques like [LeanVM][leanvm]. The `SIGNATURE` frame mode will signify to clients a pure computation that can be cached, same as with signatures today and the signature list. It would have elision behavior similar to the signature list currently defined. If a `SIGNATURE` frame is signing over the canonical hash, the frame calldata (the signature) is omitted; otherwise, it is committed in the digest. The actual data of a `SIGNATURE` frame is never introspectable by another frame, to ensure it can be stripped out in the future.
+
+When we decide to enable signature aggregation, a block builder can simply iterate the frames for `SIGNATURE` frames targeting cryptographic operations that the protocol knows how to aggregate. That signature data is stripped, and the witness for the block proves the signature existed and was valid. `SIGPARAM` could be kept, or we could rely on the normal frame status introspection.
+
+## The last transaction
+
+None of the examples needed a new transaction type. None touched the envelope. Expiry and recent roots are a canonical contract and a prefix the mempool knows how to read. Transaction assertions and signature aggregation are a frame mode. Sweeping is one instruction. Each problem was tackled by the flexibility of frames. That is what the title means. Frames aren't the last change we'll make to the EVM, but they should be the last transaction type we need for accounts. Everything after is a frame.
+
+[*On Abstraction*][on-abstraction] described accounts whose validation is arbitrary code and miners who "pattern-match to only accept transactions that are of this standard form (new standard forms can of course be introduced over time)", bounded at 50,000 gas. Eleven years later, the standard forms are called validation prefixes and the bound is `MAX_VERIFY_GAS`. The envelope is solved. The standard forms are where the work is now.
+
+[frame-tx]: https://eips.ethereum.org/EIPS/eip-8141
+[on-abstraction]: https://blog.ethereum.org/2015/07/05/on-abstraction
+[eip-86]: https://eips.ethereum.org/EIPS/eip-86
+[prix-fixe]: https://ethereum-magicians.org/t/frame-transactions-vs-schemedtransactions-for-post-quantum-ethereum/28056/15
+[eip-2938]: https://eips.ethereum.org/EIPS/eip-2938
+[eip-7701]: https://eips.ethereum.org/EIPS/eip-7701
+[eip-2711]: https://eips.ethereum.org/EIPS/eip-2711#expiring-transactions
+[tempo-tx]: https://tempo.xyz/developers/docs/protocol/transactions/spec-tempo-transaction#transaction-type
+[base-tx]: https://eips.ethereum.org/EIPS/eip-8130#aa-transaction-type
+[erc-4337]: https://eips.ethereum.org/EIPS/eip-4337#smart-contract-account-interface
+[revert-protection]: https://arxiv.org/html/2410.19106v1
+[8141-expiry]: https://eips.ethereum.org/EIPS/eip-8141#expiry-verifier-frame
+[prefix]: https://eips.ethereum.org/EIPS/eip-8141#validation-prefix
+[frame-mempool]: https://hackmd.io/@matt/frame-mempool
+[recent-roots-asm]: https://github.com/ethereum/sys-asm/pull/53
+[1ts]: https://ethereum.org/reports/trillion-dollar-security/
+[extsload]: https://ethereum-magicians.org/t/extsload-opcode-proposal/2410/8
+[eip-7906]: https://eips.ethereum.org/EIPS/eip-7906
+[ssz-sweep]: https://discord.com/channels/595666850260713488/688075293562503241/1403015813363011686
+[eip-8288]: https://github.com/ethereum/EIPs/pull/11772
+[user-space]: https://en.wikipedia.org/wiki/User_space_and_kernel_space
+[leanvm]: https://github.com/leanEthereum/leanVM
