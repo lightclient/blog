@@ -6,6 +6,8 @@ description = "Ethereum is meant to be limited only by users' imagination. Frame
 tags = ["ethereum"]
 +++
 
+*Special thanks to Toni Wahrstätter, Vitalik Buterin, Derek Chiang, and Iván Litteri for reviewing and sharing feedback on this post.*
+
 A [founding principle][on-abstraction] of Ethereum is to create an environment that is limited only by users' imagination. Certain concessions were made to deliver the network in a timely fashion, including a transaction type with a fixed authentication scheme. It was [never intended][eip-86] to be the final solution.
 
 The lineage of account abstraction discussions stretches over a decade now. We've seen in-protocol proposals, application standards, and alt-mempool implementations. A lot was learned in that decade. We found that account abstraction often means something very different to different people (I always preferred "validation abstraction", since it gets to the point). We also found that users' needs are always evolving. Agility is important.
@@ -17,10 +19,11 @@ All of this experience has led us to [frame transactions][frame-tx]. I want to s
 To begin understanding our preference for frames, we need to enumerate the design goals and give our solution requirements.
 
 - **Key rotation** -- Maybe one of the gravest omissions of the original protocol; key rotation is a basic, albeit critical, security practice most expect out of a system relying on cryptographic keys.
-- **Crypto-agility** -- Any good account abstraction system will allow users their choice of cryptographic scheme that they will entrust their assets with. We believe users should have the freedom of choice and not be constrained by a [prix-fixe menu][prix-fixe], instead they should have building blocks at their disposal.
+- **Crypto-agility** -- Any good account abstraction system will allow users their choice of cryptographic scheme that they will entrust their assets with. We believe users should have the freedom of choice and not be constrained by a [prix-fixe menu][prix-fixe], instead they should have building blocks at their disposal. These building blocks should also be suitable for being combined in arbitrary ways, such as a multisig. A multisig should support the use of user-defined, heterogeneous sets of cryptographic algorithms.
 - **Post-quantum ready** -- Key rotation and crypto-agility are stepping stones toward PQ, but there is one looming problem: PQ crypto is *big*. Like, signatures that are two to ten kilobytes big. Sure, users can pay half a million gas for their signature, but this isn't scalable if we want to maintain some semblance of normality for users. For this, we need *signature aggregation*.
 - **Sender/payer separation** -- There are many use cases that require the sender and payer to be different entities, including contracts. Think tx sponsorship, gas abstraction, user onboarding, etc.
 - **Relayer-less** -- The public mempool plays a key role in ensuring the censorship resistance of Ethereum. With many routes to block builders and inclusion committees, its denial of service is unlikely. All common use cases must be supported by default in the public mempool.
+- **First class privacy pool support** -- to ensure Ethereum users have access to needed privacy tools, we also make the explicit constraint that any solution should natively support using privacy pools. This means without relayers, in the public mempool, and benefiting from protocol mechanisms such as FOCIL.
 - **Programmable validity** -- Although many design goals can fall under this point, we should have the humility to know that we can't even begin to imagine all the validation constraints users might want. As in the founding principle, we believe that programmable validation is a key attribute of account abstraction.
 
 Most of these come for free when you allow users to execute arbitrary code. Key rotation systems and crypto-agility just become code. It's even in the name for programmable validity. Sender and payer separation requires more thought, but also ends up being relatively straightforward.
@@ -48,9 +51,28 @@ There are two key advantages of frames:
 
 Extensibility is what separates frames from most other account abstraction proposals, and observability is what makes them feasible in production.
 
-## Public mempool subset
+Another way to look at it: the combination of these properties give us the possibility for more general transaction dependencies. Today a transaction is valid if the signature is valid and the nonce / balance checks pass. There are many other types of dependencies we might want to handle though: expiry time, the validity of an aggregated signature, having balance in a [new type of state][utxo], and more. Frames can handle this without container changes. In some cases, no protocol change is needed at all. In others, a less invasive change is made to add a frame mode or EVM instruction intended to be used by frames. We'll walk through more of these ideas in-depth in the example extensions.
 
-It's important to note also that there is a distinction between what is possible with frames and what is possible with frames in the public mempool. Because frames are so extensible, only a subset of what is possible can be safely propagated over the public mempool. This is because some features can't be reasoned about safely, even with improved observability. [Revert protection][revert-protection] is a good example, because by definition it requires the full execution of the operation to complete before deciding if the transaction should be considered valid or not. Imagine a mempool full of those that could be invalidated by flipping a bit. Cheap DoS.
+## Subsets of frames
+
+A guiding principle we've held while designing frames is that unless there is a good reason a certain behavior should be limited or disallowed by the protocol, we should not constrain the protocol rules. We do this because it's easier to increase the available subset via out-of-protocol means versus changing consensus rules. This also means not all functionality of frames is available to all users, in particular users of the public mempool and users of other EVM chains. Below we sketch this out further and explain how we expect them to safely utilize a subset of frames.
+
+### Public Mempool
+
+Only a subset of what is possible can be safely propagated over the public mempool. This is because some features can't be reasoned about safely, even with improved observability. [Revert protection][revert-protection] is a good example, because by definition it requires the full execution of the operation to complete before deciding if the transaction should be considered valid or not. Imagine a mempool full of those that could be invalidated by flipping a bit. Cheap DoS.
+
+For a more complete discussion of what rules may or may not be allowed, as well as how we see the spectrum of permissionless use and complexity, see the [frame mempool][frame-mempool] document.
+
+### Other chains
+
+The design goals and extensions outlined below are a very layer-one-centric view of transacting. Other EVM environments have different requirements and constraints, but there are two that come up frequently:
+
+- **Static determinability** -- The ability to determine, statically, if a transaction is includable or not. This is often critical in very high performance, low fee chains due to i) the raw throughput and/or ii) the infrastructure cost of centralized sequencers / RPCs being paid directly by chain designers. Static determinability and true programmable validity are fundamentally at odds. Until a user can construct a zk proof that their transaction is valid against some prestate, arbitrary validation always needs to be executed. Other EVM chains have to decide if they want to support programmable validity. They may prefer a prix-fixe list of cryptographic algorithms instead. While this isn't appropriate for L1, it may be important on other chains. This can be done via frames in a number of ways which we will discuss below.
+- **Unified UX** -- Centrally planned chains often consider their chain a *product*, and as a product *owner* they owe a certain responsibility for providing a complete experience to users. The vertical integration makes this possible: as protocol designers, infrastructure providers, wallet owners, etc. they have the latitude to enforce a certain standard for the default experience on the chain. This, again, requires some degree of enforcement.
+
+Frames can offer the above characteristics in a few ways, but they generally all depend on the protocol designers enforcing the prix-fixe menu. [Keystores][eip-8130] are a good example how this could be done. Accounts delegate directly to a keystore implementation which the protocol can reason about statically. Protocol rules or `DELEGATECALL` can allow custom functionality after the initial validation to be executed. An even simpler solution with good portability is to only allow accounts who use known wallet implementations to transact with frames. The validation of these wallets can be modeled in client code and the validity is then determinable without invoking an EVM.
+
+Ultimately, both the [keystore][eip-8130] style approach and general frame approach can achieve similar results in their own way. The EVM is quasi-turing-complete and therefore it becomes a bit of a stylistic debate as to which design to use.
 
 ## Showcase of frame extensions
 
@@ -62,11 +84,11 @@ A [long-desired][eip-2711] feature for transactions is the ability to specify a 
 
 This can be directly implemented with a [canonical expiry contract][8141-expiry] and a known frame [prefix][prefix]. The canonical contract implements the protocol rules like `if ( TIMESTAMP > valid_until ) { revert() }`. `VERIFY` frames that call the expiry contract can then be reasoned about statically. If the frame's calldata is simply `valid_until`, this becomes a de facto defined quantity on the transaction, without any protocol changes.
 
-To process these transactions most efficiently, the mempool should interpret this field and have specific structures to drop expired txs. Adding frame extensions isn't "free", but it shifts the complexity from the core protocol to the mempool, which, in most cases, is very desirable.
+To process these transactions most efficiently, the mempool should interpret this field and have specific structures to drop expired txs. Adding frame extensions isn't "free", but it shifts the complexity from the core protocol to the mempool. This is very desirable, because it means a disagreement on the extensions will temporarily disrupt the mempool instead of potentially finalizing an invalid state.
 
 ### Recent roots
 
-Due to the [inevitable rules][frame-mempool] that protect the public mempool, by default it is not possible to withdraw from a privacy pool and use the newly withdrawn ether to pay for the withdrawal transaction. This limitation is due to the restrictions placed on storage access in the public mempool.
+Due to the [inevitable rules][frame-mempool] that protect the public mempool, by default it is not possible to withdraw from a privacy pool and use the newly withdrawn ether to pay for the withdrawal transaction. This limitation is due to the restrictions placed on storage access in the public mempool. Concurrent use of privacy pools is handled separately via [keyed nonces][keyed-nonces].
 
 It isn't that storage access is inherently impossible to support. It is that arbitrary access is problematic. As with the expiry frame, we can apply a similar strategy: define a canonical implementation of behavior we know is safe and allow transactions to reference it in a prefix.
 
@@ -88,22 +110,22 @@ It may seem these two requirements are mutually exclusive: knowing that X and on
 
 This is the inspiration for the current state of [EIP-7906: Transaction Assertions via State Diff Opcode][eip-7906]. The opcodes introduced provide the functionality required; the `POST_TX` frame ensures the opcodes cannot be abused. Outside the `POST_TX` frame, the `TXDIFF` and related instructions result in an exceptional halt of execution, and then validity of the overall frame transaction requires the `POST_TX` mode only be used as a postfix.
 
-There are other ways to achieve a similar outcome, but with frames it is straightforward, modular, and immediately useful to any account transacting with frames.
+There are other ways to achieve a similar outcome, but with frames it is straightforward, modular, and immediately useful to any account transacting with frames, as well as the chain of vendors producing the transaction: i.e. the dapp, wallet, security plugin, etc.
 
 ### Account sweeping
 
 Intuitively, it makes little sense how difficult it is to send the full ether balance from an account. The exact gas costs need to be carefully planned, and an inefficient price is paid where all excess is tipped to the builder. Sweeping the full balance from one account to another should be easy; however, it turns out not so easy.
 
-The process of paying for gas and initiating execution is the same for all transaction types currently. An [obvious solution][ssz-sweep] is to introduce a new transaction type whose sole purpose is to sweep the entire balance of an account to a new destination. Of course, this works, but it is inflexible and cannot be integrated into more complex flows.
+The process of paying for gas and initiating execution is the same for all transaction types currently. An [obvious solution][ssz-sweep] is to introduce a new transaction type whose sole purpose is to sweep the entire balance of an account to a new destination. Of course, this works, but it is inflexible and cannot be integrated into more complex flows. Another obvious solution is to use a counterparty to sponsor, however, this breaks our relayer-less design goal.
 
 Enjoyers of the EVM may be itching to point out that the recent neutering of `SELFDESTRUCT` has caused it to become more of a `SENDALL`. If accounts can execute code, just call `SENDALL`! Unfortunately, the same issue arises as with other proposals: the gas refund at the end of the transaction is returned to the payer.
 
 Since the gas refund is the main culprit of our issues, we can address it directly. Suppose we introduce a new instruction `SWEEP`, which behaves the same as `APPROVE` with two distinctions:
 
-- it takes one argument from the stack, the destination to send all funds
+- it takes one argument from the stack, the destination to send all funds upon invocation
 - it changes the account that is due to receive the refund at the end of the transaction to the aforementioned destination account
 
-Now sweeping the account is simple. If `A` is the origin account and `B` is the destination, `A` submits a frame transaction utilizing `SWEEP` with `B` as the argument. Then `A` can execute whatever other remaining cleanup it might want.
+Now sweeping the account is simple. If `A` is the origin account and `B` is the destination, `A` submits a frame transaction utilizing `SWEEP` with `B` as the argument. The instruction sends all funds from `A` to `B`, then sets `A` as sender/payer and `B` as refund destination. Then `A` can execute whatever other remaining cleanup it might want.
 
 ### Signature aggregation
 
@@ -143,3 +165,7 @@ None of the examples needed a new transaction type. None touched the envelope. E
 [eip-8288]: https://github.com/ethereum/EIPs/pull/11772
 [user-space]: https://en.wikipedia.org/wiki/User_space_and_kernel_space
 [leanvm]: https://github.com/leanEthereum/leanVM
+[utxo]: https://ethresear.ch/t/native-utxos-on-ethereum/25368
+[eip-8130]: https://eips.ethereum.org/EIPS/eip-8130
+[keyed-nonces]: https://eips.ethereum.org/EIPS/eip-8250
+leanvm]: https://github.com/leanEthereum/leanVM
