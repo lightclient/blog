@@ -168,4 +168,3 @@ None of the examples needed a new transaction type. None touched the envelope. E
 [utxo]: https://ethresear.ch/t/native-utxos-on-ethereum/25368
 [eip-8130]: https://eips.ethereum.org/EIPS/eip-8130
 [keyed-nonces]: https://eips.ethereum.org/EIPS/eip-8250
-leanvm]: https://github.com/leanEthereum/leanVM
